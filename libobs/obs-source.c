@@ -1241,7 +1241,7 @@ static inline size_t conv_time_to_frames(const size_t sample_rate,
 
 /* time threshold in nanoseconds to ensure audio timing is as seamless as
  * possible */
-#define TS_SMOOTHING_THRESHOLD 70000000ULL
+#define TS_SMOOTHING_THRESHOLD 40000000ULL
 
 static inline void reset_audio_timing(obs_source_t *source, uint64_t timestamp,
 				      uint64_t os_time)
@@ -1392,10 +1392,11 @@ static void source_output_audio_data(obs_source_t *source,
 
 	/* detects 'directly' set timestamps as long as they're within
 	 * a certain threshold */
-	if (uint64_diff(in.timestamp, os_time) < MAX_TS_VAR) {
+	if (uint64_diff(in.timestamp, os_time) < MAX_TS_VAR*10) { // reduced MAX_TS_VAR but I know my timestamps are NTP synced, so pushing OBS in the right direction here
 		source->timing_adjust = 0;
 		source->timing_set = true;
 		using_direct_ts = true;
+                blog(LOG_DEBUG, "USING DIRECT TS");
 	}
 
 	if (!source->timing_set) {
@@ -3388,7 +3389,7 @@ void remove_async_frame(obs_source_t *source, struct obs_source_frame *frame)
 	}
 }
 
-/* #define DEBUG_ASYNC_FRAMES 1 */
+//#define DEBUG_ASYNC_FRAMES 1
 
 static bool ready_async_frame(obs_source_t *source, uint64_t sys_time)
 {
@@ -3421,9 +3422,9 @@ static bool ready_async_frame(obs_source_t *source, uint64_t sys_time)
 
 	/* account for timestamp invalidation */
 	if (frame_out_of_bounds(source, frame_time)) {
-#if DEBUG_ASYNC_FRAMES
+//#if DEBUG_ASYNC_FRAMES
 		blog(LOG_DEBUG, "timing jump");
-#endif
+//#endif
 		source->last_frame_ts = next_frame->timestamp;
 		return true;
 	} else {
@@ -3438,7 +3439,7 @@ static bool ready_async_frame(obs_source_t *source, uint64_t sys_time)
 		 * other words, tries to keep the framerate as smooth as
 		 * possible */
 		if ((source->last_frame_ts - next_frame->timestamp) < 2000000)
-			break;
+			break; // seems to not do anything if delta is less than 2 ms
 
 		if (frame)
 			da_erase(source->async_frames, 0);
@@ -3461,9 +3462,9 @@ static bool ready_async_frame(obs_source_t *source, uint64_t sys_time)
 
 		/* more timestamp checking and compensating */
 		if ((next_frame->timestamp - frame_time) > MAX_TS_VAR) {
-#if DEBUG_ASYNC_FRAMES
+//#if DEBUG_ASYNC_FRAMES
 			blog(LOG_DEBUG, "timing jump");
-#endif
+//#endif
 			source->last_frame_ts =
 				next_frame->timestamp - frame_offset;
 		}
