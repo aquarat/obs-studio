@@ -365,13 +365,13 @@ void os_sleep_ms(uint32_t duration)
 
 uint64_t os_gettime_ns(void)
 {
-	FILETIME timestamp;
-        GetSystemTimeAsFileTime(&timestamp);
-        double ll_now = (LONGLONG)ft_now.dwLowDateTime + ((LONGLONG)(ft_now.dwHighDateTime) << 32LL);
-        ll_now = 116444736000000000LL; // to reference the UNIX epoch
-        ll_now = ll_now / 10000LL;
+	FILETIME ft_now;
+        GetSystemTimeAsFileTime(&ft_now);
+        uint64_t ll_now = uint65_t((LONGLONG)ft_now.dwLowDateTime + ((LONGLONG)(ft_now.dwHighDateTime) << 32LL));
+        ll_now = ll_now - uint64_t(116444736000000000LL); // to reference the UNIX epoch
+//        ll_now = ll_now / 10000LL;
 
-        return (uint64_t)ll_now;
+        return ll_now;
 	/*
 
 	LARGE_INTEGER current_time;
