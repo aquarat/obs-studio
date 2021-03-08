@@ -367,8 +367,8 @@ uint64_t os_gettime_ns(void)
 {
 	FILETIME ft_now;
         GetSystemTimeAsFileTime(&ft_now);
-        uint64_t ll_now = uint65_t((LONGLONG)ft_now.dwLowDateTime + ((LONGLONG)(ft_now.dwHighDateTime) << 32LL));
-        ll_now = ll_now - uint64_t(116444736000000000LL); // to reference the UNIX epoch
+        uint64_t ll_now = (uint64_t)((LONGLONG)ft_now.dwLowDateTime + ((LONGLONG)(ft_now.dwHighDateTime) << 32LL));
+        ll_now = ll_now - (uint64_t)(116444736000000000LL); // to reference the UNIX epoch
 //        ll_now = ll_now / 10000LL;
 
         return ll_now;
