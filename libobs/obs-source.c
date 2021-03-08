@@ -1318,7 +1318,7 @@ static void source_output_audio_place(obs_source_t *source,
 
 #if DEBUG_AUDIO == 1
 	blog(LOG_DEBUG,
-	     "frames: %lu, size: %lu, placement: %lu, base_ts: %llu, ts: %llu",
+	     "frames: %lu, size: %lu, placement: %lu, base_ts: %lu, ts: %lu",
 	     (unsigned long)in->frames,
 	     (unsigned long)source->audio_input_buf[0].size,
 	     (unsigned long)buf_placement, source->audio_ts, in->timestamp);
@@ -1396,8 +1396,13 @@ static void source_output_audio_data(obs_source_t *source,
 		source->timing_adjust = 0;
 		source->timing_set = true;
 		using_direct_ts = true;
-                blog(LOG_DEBUG, "USING DIRECT TS");
-	}
+                blog(LOG_DEBUG, "################### USING DIRECT TS");
+                blog(LOG_DEBUG, "##### os_time: %lu | in ts: %lu | delta source: %lu | mx_ts_var: %llu %s", os_time, in.timestamp, uint64_diff(in.timestamp, os_time), MAX_TS_VAR*10, obs_source_get_name(source));
+	} else {
+		blog(LOG_DEBUG, "################### NOT USING DIRECT TS");
+		blog(LOG_DEBUG, "##### os_time: %lu | in ts: %lu | delta source: %lu | mx_ts_var: %llu %s", os_time, in.timestamp, uint64_diff(in.timestamp, os_time), MAX_TS_VAR*10, obs_source_get_name(source));
+
+        }
 
 	if (!source->timing_set) {
 		reset_audio_timing(source, in.timestamp, os_time);
@@ -3412,8 +3417,8 @@ static bool ready_async_frame(obs_source_t *source, uint64_t sys_time)
 
 #if DEBUG_ASYNC_FRAMES
 	blog(LOG_DEBUG,
-	     "source->last_frame_ts: %llu, frame_time: %llu, "
-	     "sys_offset: %llu, frame_offset: %llu, "
+	     "source->last_frame_ts: %lu, frame_time: %lu, "
+	     "sys_offset: %lu, frame_offset: %lu, "
 	     "number of frames: %lu",
 	     source->last_frame_ts, frame_time, sys_offset,
 	     frame_time - source->last_frame_ts,
@@ -3423,7 +3428,15 @@ static bool ready_async_frame(obs_source_t *source, uint64_t sys_time)
 	/* account for timestamp invalidation */
 	if (frame_out_of_bounds(source, frame_time)) {
 //#if DEBUG_ASYNC_FRAMES
-		blog(LOG_DEBUG, "timing jump");
+		blog(LOG_DEBUG, "#################### timing jump async video - frame out of bounds");
+                        blog(LOG_DEBUG,
+             "source->last_frame_ts: %lu, frame_time: %lu, "
+             "sys_offset: %lu, frame_offset: %lu, "
+             "number of frames: %lu",
+             source->last_frame_ts, frame_time, sys_offset,
+             frame_time - source->last_frame_ts,
+             (unsigned long)source->async_frames.num);
+
 //#endif
 		source->last_frame_ts = next_frame->timestamp;
 		return true;
@@ -3447,8 +3460,8 @@ static bool ready_async_frame(obs_source_t *source, uint64_t sys_time)
 #if DEBUG_ASYNC_FRAMES
 		blog(LOG_DEBUG,
 		     "new frame, "
-		     "source->last_frame_ts: %llu, "
-		     "next_frame->timestamp: %llu",
+		     "source->last_frame_ts: %lu, "
+		     "next_frame->timestamp: %lu",
 		     source->last_frame_ts, next_frame->timestamp);
 #endif
 
@@ -3463,7 +3476,7 @@ static bool ready_async_frame(obs_source_t *source, uint64_t sys_time)
 		/* more timestamp checking and compensating */
 		if ((next_frame->timestamp - frame_time) > MAX_TS_VAR) {
 //#if DEBUG_ASYNC_FRAMES
-			blog(LOG_DEBUG, "timing jump");
+			blog(LOG_DEBUG, "###################### timing jump next-frame vs frame_time vs MAX_TS_VAR %lu %lu %lu", next_frame->timestamp, frame_time, MAX_TS_VAR);
 //#endif
 			source->last_frame_ts =
 				next_frame->timestamp - frame_offset;

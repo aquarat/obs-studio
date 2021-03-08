@@ -188,7 +188,7 @@ void os_sleep_ms(uint32_t duration)
 uint64_t os_gettime_ns(void)
 {
 	struct timespec ts;
-	clock_gettime(CLOCK_MONOTONIC, &ts);
+	clock_gettime(CLOCK_REALTIME, &ts); // was CLOCK_MONOTONIC : https://linux.die.net/man/3/clock_gettime , which is probably why is was completely unrelated to unix time.
 	return ((uint64_t)ts.tv_sec * 1000000000ULL + (uint64_t)ts.tv_nsec);
 }
 
