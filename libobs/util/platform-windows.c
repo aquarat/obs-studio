@@ -370,8 +370,8 @@ uint64_t os_gettime_ns(void)
 
 	// takes the last modified date
 	LARGE_INTEGER date, adjust;
-	date.HighPart = ft.dwHighDateTime;
-	date.LowPart = ft.dwLowDateTime;
+	date.HighPart = ft->dwHighDateTime;
+	date.LowPart = ft->dwLowDateTime;
 
 	// 100-nanoseconds = milliseconds * 10000
 	adjust.QuadPart = 11644473600000LL * 10000LL;
