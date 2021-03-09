@@ -365,13 +365,30 @@ void os_sleep_ms(uint32_t duration)
 
 uint64_t os_gettime_ns(void)
 {
-	FILETIME ft_now;
-        GetSystemTimeAsFileTime(&ft_now);
-        uint64_t ll_now = (uint64_t)((LONGLONG)ft_now.dwLowDateTime + ((LONGLONG)(ft_now.dwHighDateTime) << 32LL));
-        ll_now = ll_now - (uint64_t)(116444736000000000LL); // to reference the UNIX epoch
+	LPFILETIME ft;
+        GetSystemTimePreciseAsFileTime(&ft);
+
+	// takes the last modified date
+	LARGE_INTEGER date, adjust;
+	date.HighPart = ft.dwHighDateTime;
+	date.LowPart = ft.dwLowDateTime;
+
+	// 100-nanoseconds = milliseconds * 10000
+	adjust.QuadPart = 11644473600000LL * 10000LL;
+
+	// removes the diff between 1970 and 1601
+	date.QuadPart -= adjust.QuadPart;
+
+	// converts back from 100-nanoseconds to seconds
+	return (uint64_t)(date.QuadPart * 100LL);
+
+
+//        GetSystemTimeAsFileTime(&ft_now);
+//        uint64_t ll_now = (uint64_t)((LONGLONG)ft_now.dwLowDateTime + ((LONGLONG)(ft_now.dwHighDateTime) << 32LL));
+//        ll_now = ll_now - (uint64_t)(116444736000000000LL); // to reference the UNIX epoch
 //        ll_now = ll_now / 10000LL;
 
-        return ll_now;
+//        return ll_now;
 	/*
 
 	LARGE_INTEGER current_time;
