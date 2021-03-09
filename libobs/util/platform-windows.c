@@ -365,7 +365,7 @@ void os_sleep_ms(uint32_t duration)
 
 uint64_t os_gettime_ns(void)
 {
-        PLARGE_INTEGER ft;
+        LARGE_INTEGER ft, adjust;
         KeQuerySystemTimePrecise(&ft)
 //	LPFILETIME ft;
 //        GetSystemTimePreciseAsFileTime(&ft);
