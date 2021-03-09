@@ -365,22 +365,25 @@ void os_sleep_ms(uint32_t duration)
 
 uint64_t os_gettime_ns(void)
 {
-	LPFILETIME ft;
-        GetSystemTimePreciseAsFileTime(&ft);
+        PLARGE_INTEGER ft;
+        KeQuerySystemTimePrecise(&ft)
+//	LPFILETIME ft;
+//        GetSystemTimePreciseAsFileTime(&ft);
 
 	// takes the last modified date
-	LARGE_INTEGER date, adjust;
-	date.HighPart = ft->dwHighDateTime;
-	date.LowPart = ft->dwLowDateTime;
+//	LARGE_INTEGER date, adjust;
+//	date.HighPart = ft->dwHighDateTime;
+//	date.LowPart = ft->dwLowDateTime;
 
 	// 100-nanoseconds = milliseconds * 10000
 	adjust.QuadPart = 11644473600000LL * 10000LL;
 
 	// removes the diff between 1970 and 1601
 	date.QuadPart -= adjust.QuadPart;
+        date.QuadPart *= 100LL;
 
 	// converts back from 100-nanoseconds to seconds
-	return (uint64_t)(date.QuadPart * 100LL);
+	return (uint64_t)date.QuadPart;
 
 
 //        GetSystemTimeAsFileTime(&ft_now);
