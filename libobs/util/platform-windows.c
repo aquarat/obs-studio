@@ -365,35 +365,6 @@ void os_sleep_ms(uint32_t duration)
 
 uint64_t os_gettime_ns(void)
 {
-        LARGE_INTEGER ft, adjust;
-        KeQuerySystemTimePrecise(&ft)
-//	LPFILETIME ft;
-//        GetSystemTimePreciseAsFileTime(&ft);
-
-	// takes the last modified date
-//	LARGE_INTEGER date, adjust;
-//	date.HighPart = ft->dwHighDateTime;
-//	date.LowPart = ft->dwLowDateTime;
-
-	// 100-nanoseconds = milliseconds * 10000
-	adjust.QuadPart = 11644473600000LL * 10000LL;
-
-	// removes the diff between 1970 and 1601
-	date.QuadPart -= adjust.QuadPart;
-        date.QuadPart *= 100LL;
-
-	// converts back from 100-nanoseconds to seconds
-	return (uint64_t)date.QuadPart;
-
-
-//        GetSystemTimeAsFileTime(&ft_now);
-//        uint64_t ll_now = (uint64_t)((LONGLONG)ft_now.dwLowDateTime + ((LONGLONG)(ft_now.dwHighDateTime) << 32LL));
-//        ll_now = ll_now - (uint64_t)(116444736000000000LL); // to reference the UNIX epoch
-//        ll_now = ll_now / 10000LL;
-
-//        return ll_now;
-	/*
-
 	LARGE_INTEGER current_time;
 	double time_val;
 
@@ -402,7 +373,7 @@ uint64_t os_gettime_ns(void)
 	time_val *= 1000000000.0;
 	time_val /= (double)get_clockfreq();
 
-	return (uint64_t)time_val;*/
+	return (uint64_t)time_val;
 }
 
 /* returns [folder]\[name] on windows */

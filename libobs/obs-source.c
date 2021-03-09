@@ -1379,6 +1379,8 @@ static inline bool source_muted(obs_source_t *source, uint64_t os_time)
 	       (source->push_to_talk_enabled && !push_to_talk_active);
 }
 
+uint8_t counter = 0;
+
 static void source_output_audio_data(obs_source_t *source,
 				     const struct audio_data *data)
 {
@@ -1390,17 +1392,24 @@ static void source_output_audio_data(obs_source_t *source,
 	bool using_direct_ts = false;
 	bool push_back = false;
 
+        counter++;
 	/* detects 'directly' set timestamps as long as they're within
 	 * a certain threshold */
-	if (uint64_diff(in.timestamp, os_time) < MAX_TS_VAR*10) { // reduced MAX_TS_VAR but I know my timestamps are NTP synced, so pushing OBS in the right direction here
+	if (uint64_diff(in.timestamp, os_time) < MAX_TS_VAR) { // reduced MAX_TS_VAR but I know my timestamps are NTP synced, so pushing OBS in the right direction here
 		source->timing_adjust = 0;
 		source->timing_set = true;
 		using_direct_ts = true;
-                blog(LOG_DEBUG, "################### USING DIRECT TS");
-                blog(LOG_DEBUG, "##### os_time: %lu | in ts: %lu | delta source: %lu | mx_ts_var: %llu %s", os_time, in.timestamp, uint64_diff(in.timestamp, os_time), MAX_TS_VAR*10, obs_source_get_name(source));
+                if (counter > 300) {
+	                counter = 0;
+        	        blog(LOG_DEBUG, "################### USING DIRECT TS");
+                	blog(LOG_DEBUG, "##### os_time: %lu | in ts: %lu | delta source: %lu | mx_ts_var: %llu %s", os_time, in.timestamp, uint64_diff(in.timestamp, os_time), MAX_TS_VAR*10, obs_source_get_name(source));
+                }
 	} else {
-		blog(LOG_DEBUG, "################### NOT USING DIRECT TS");
-		blog(LOG_DEBUG, "##### os_time: %lu | in ts: %lu | delta source: %lu | mx_ts_var: %llu %s", os_time, in.timestamp, uint64_diff(in.timestamp, os_time), MAX_TS_VAR*10, obs_source_get_name(source));
+                if (counter > 300) {
+	                counter = 0;
+			blog(LOG_DEBUG, "################### NOT USING DIRECT TS");
+			blog(LOG_DEBUG, "##### os_time: %lu | in ts: %lu | delta source: %lu | mx_ts_var: %llu %s", os_time, in.timestamp, uint64_diff(in.timestamp, os_time), MAX_TS_VAR*10, obs_source_get_name(source));
+		}
 
         }
 
