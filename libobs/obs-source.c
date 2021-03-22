@@ -1241,7 +1241,7 @@ static inline size_t conv_time_to_frames(const size_t sample_rate,
 
 /* time threshold in nanoseconds to ensure audio timing is as seamless as
  * possible */
-#define TS_SMOOTHING_THRESHOLD 40000000ULL
+#define TS_SMOOTHING_THRESHOLD 70000000ULL
 
 static inline void reset_audio_timing(obs_source_t *source, uint64_t timestamp,
 				      uint64_t os_time)
@@ -1318,7 +1318,7 @@ static void source_output_audio_place(obs_source_t *source,
 
 #if DEBUG_AUDIO == 1
 	blog(LOG_DEBUG,
-	     "frames: %lu, size: %lu, placement: %lu, base_ts: %lu, ts: %lu",
+	     "frames: %lu, size: %lu, placement: %lu, base_ts: %llu, ts: %llu",
 	     (unsigned long)in->frames,
 	     (unsigned long)source->audio_input_buf[0].size,
 	     (unsigned long)buf_placement, source->audio_ts, in->timestamp);
@@ -1379,8 +1379,6 @@ static inline bool source_muted(obs_source_t *source, uint64_t os_time)
 	       (source->push_to_talk_enabled && !push_to_talk_active);
 }
 
-uint8_t counter = 0;
-
 static void source_output_audio_data(obs_source_t *source,
 				     const struct audio_data *data)
 {
@@ -1392,26 +1390,13 @@ static void source_output_audio_data(obs_source_t *source,
 	bool using_direct_ts = false;
 	bool push_back = false;
 
-        counter++;
 	/* detects 'directly' set timestamps as long as they're within
 	 * a certain threshold */
-	if (uint64_diff(in.timestamp, os_time) < MAX_TS_VAR) { // reduced MAX_TS_VAR but I know my timestamps are NTP synced, so pushing OBS in the right direction here
+	if (uint64_diff(in.timestamp, os_time) < MAX_TS_VAR) {
 		source->timing_adjust = 0;
 		source->timing_set = true;
 		using_direct_ts = true;
-                if (counter > 300) {
-	                counter = 0;
-        	        blog(LOG_DEBUG, "################### USING DIRECT TS");
-                	blog(LOG_DEBUG, "##### os_time: %lu | in ts: %lu | delta source: %lu | mx_ts_var: %llu %s", os_time, in.timestamp, uint64_diff(in.timestamp, os_time), MAX_TS_VAR*10, obs_source_get_name(source));
-                }
-	} else {
-                if (counter > 300) {
-	                counter = 0;
-			blog(LOG_DEBUG, "################### NOT USING DIRECT TS");
-			blog(LOG_DEBUG, "##### os_time: %lu | in ts: %lu | delta source: %lu | mx_ts_var: %llu %s", os_time, in.timestamp, uint64_diff(in.timestamp, os_time), MAX_TS_VAR*10, obs_source_get_name(source));
-		}
-
-        }
+	}
 
 	if (!source->timing_set) {
 		reset_audio_timing(source, in.timestamp, os_time);
@@ -3403,7 +3388,7 @@ void remove_async_frame(obs_source_t *source, struct obs_source_frame *frame)
 	}
 }
 
-//#define DEBUG_ASYNC_FRAMES 1
+/* #define DEBUG_ASYNC_FRAMES 1 */
 
 static bool ready_async_frame(obs_source_t *source, uint64_t sys_time)
 {
@@ -3426,8 +3411,8 @@ static bool ready_async_frame(obs_source_t *source, uint64_t sys_time)
 
 #if DEBUG_ASYNC_FRAMES
 	blog(LOG_DEBUG,
-	     "source->last_frame_ts: %lu, frame_time: %lu, "
-	     "sys_offset: %lu, frame_offset: %lu, "
+	     "source->last_frame_ts: %llu, frame_time: %llu, "
+	     "sys_offset: %llu, frame_offset: %llu, "
 	     "number of frames: %lu",
 	     source->last_frame_ts, frame_time, sys_offset,
 	     frame_time - source->last_frame_ts,
@@ -3436,17 +3421,9 @@ static bool ready_async_frame(obs_source_t *source, uint64_t sys_time)
 
 	/* account for timestamp invalidation */
 	if (frame_out_of_bounds(source, frame_time)) {
-//#if DEBUG_ASYNC_FRAMES
-		blog(LOG_DEBUG, "#################### timing jump async video - frame out of bounds");
-                        blog(LOG_DEBUG,
-             "source->last_frame_ts: %lu, frame_time: %lu, "
-             "sys_offset: %lu, frame_offset: %lu, "
-             "number of frames: %lu",
-             source->last_frame_ts, frame_time, sys_offset,
-             frame_time - source->last_frame_ts,
-             (unsigned long)source->async_frames.num);
-
-//#endif
+#if DEBUG_ASYNC_FRAMES
+		blog(LOG_DEBUG, "timing jump");
+#endif
 		source->last_frame_ts = next_frame->timestamp;
 		return true;
 	} else {
@@ -3461,7 +3438,7 @@ static bool ready_async_frame(obs_source_t *source, uint64_t sys_time)
 		 * other words, tries to keep the framerate as smooth as
 		 * possible */
 		if ((source->last_frame_ts - next_frame->timestamp) < 2000000)
-			break; // seems to not do anything if delta is less than 2 ms
+			break;
 
 		if (frame)
 			da_erase(source->async_frames, 0);
@@ -3469,8 +3446,8 @@ static bool ready_async_frame(obs_source_t *source, uint64_t sys_time)
 #if DEBUG_ASYNC_FRAMES
 		blog(LOG_DEBUG,
 		     "new frame, "
-		     "source->last_frame_ts: %lu, "
-		     "next_frame->timestamp: %lu",
+		     "source->last_frame_ts: %llu, "
+		     "next_frame->timestamp: %llu",
 		     source->last_frame_ts, next_frame->timestamp);
 #endif
 
@@ -3484,9 +3461,9 @@ static bool ready_async_frame(obs_source_t *source, uint64_t sys_time)
 
 		/* more timestamp checking and compensating */
 		if ((next_frame->timestamp - frame_time) > MAX_TS_VAR) {
-//#if DEBUG_ASYNC_FRAMES
-			blog(LOG_DEBUG, "###################### timing jump next-frame vs frame_time vs MAX_TS_VAR %lu %lu %lu", next_frame->timestamp, frame_time, MAX_TS_VAR);
-//#endif
+#if DEBUG_ASYNC_FRAMES
+			blog(LOG_DEBUG, "timing jump");
+#endif
 			source->last_frame_ts =
 				next_frame->timestamp - frame_offset;
 		}

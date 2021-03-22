@@ -815,8 +815,8 @@ static inline void obs_source_dosignal(struct obs_source *source,
 				      &data);
 }
 
-/* maximum timestamp variance in nanoseconds - around 2.5 frames @ 29.97 */
-#define MAX_TS_VAR 70000000ULL
+/* maximum timestamp variance in nanoseconds */
+#define MAX_TS_VAR 80000000ULL
 
 static inline bool frame_out_of_bounds(const obs_source_t *source, uint64_t ts)
 {
